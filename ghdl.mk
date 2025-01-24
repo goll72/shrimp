@@ -1,6 +1,7 @@
 GHDL ?= ghdl
 
-GHDLFLAGS = --std=08 -fpsl --workdir=$(WORK)
+GHDLFLAGS ?= 
+BASEGHDLFLAGS = --std=08 -fpsl --workdir=$(WORK) $(GHDLFLAGS)
 
 OUT = $(patsubst %.vhdl,$(WORK)/%.stamp,$(SRC))
 DEPS = $(patsubst %.stamp,%.d,$(OUT))
@@ -8,7 +9,10 @@ DEPS = $(patsubst %.stamp,%.d,$(OUT))
 all: $(WORK) $(OUT)
 
 run: $(DEPS)
-	$(GHDL) elab-run $(GHDLFLAGS) $(TOP)
+	$(GHDL) elab-run $(BASEGHDLFLAGS) $(TOP)
+
+yosys: $(WORK) $(OUT)
+	yosys -m ghdl -p "$(CMD)"
 
 $(WORK):
 	@mkdir -p $(WORK)
@@ -24,11 +28,13 @@ $(WORK):
 # given file in SRC, since the files in SRC are listed in dependency order.
 $(WORK)/%.stamp: %.vhdl
 	@mkdir -p `dirname $@`
-	$(GHDL) analyze $(GHDLFLAGS) $< && touch $@
+	$(GHDL) analyze $(BASEGHDLFLAGS) $< && touch $@
 	@OUT=$@ && NAME=`basename $${OUT}` && UNIT=$${NAME%.stamp} && {           \
-		if D=$$($(GHDL) gen-depends $(GHDLFLAGS) $${UNIT} 2>/dev/null); then  \
+		if D=$$($(GHDL) gen-depends $(BASEGHDLFLAGS) $${UNIT} 2>/dev/null); then  \
 			echo "$$D" | sed "s:$(WORK)/$${UNIT}.o:$@:g";                     \
 		else                                                                  \
 			echo "$@: $(SRC)";                                                \
 		fi;                                                                   \
 	} > $${OUT%.stamp}.d
+
+.PHONY: yosys

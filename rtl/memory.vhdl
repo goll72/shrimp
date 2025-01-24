@@ -20,12 +20,14 @@ architecture behavioral of memory is
 
     signal data : mem_array_t;
 begin
-    process (clk, addr) is
+    process(clk, addr) is
         variable addr_index : integer := to_integer(unsigned(addr));
     begin
         if rising_edge(clk) then
             if en = '1' and r = '1' then
                 d_out <= data(addr_index);
+            else
+                d_out <= (others => 'Z');
             end if;
 
             if en = '1' and w = '1' then
