@@ -12,8 +12,8 @@ DEPS = $(WORK)/deps.d
 all: $(DEPS)
 
 run: $(DEPS)
-	$(NVC) $(NVCFLAGS) -e $(EFLAGS) $(TOP)
-	$(NVC) $(NVCFLAGS) -r $(RFLAGS) $(TOP)
+	$(NVC) $(NVCFLAGS) --work=$(WORK) -e $(EFLAGS) $(TOP)
+	$(NVC) $(NVCFLAGS) --work=$(WORK) -r $(RFLAGS) $(TOP)
 
 # Make the stamp (out) files depend on the files nvc generates
 $(DEPS): $(OUT) Makefile

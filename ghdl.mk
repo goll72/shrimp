@@ -8,11 +8,15 @@ DEPS = $(patsubst %.stamp,%.d,$(OUT))
 
 all: $(WORK) $(OUT)
 
-run: $(DEPS)
+run: $(WORK) $(OUT)
 	$(GHDL) elab-run $(BASEGHDLFLAGS) $(TOP)
 
 yosys: $(WORK) $(OUT)
-	yosys -m ghdl -p "$(CMD)"
+	@if ! [ -z $(TOP) ]; then \
+		yosys -m ghdl -p "ghdl $(BASEGHDLFLAGS) $(TOP); $(CMD)"; \
+	else \
+		yosys -m ghdl -p "$(CMD)"; \
+	fi
 
 $(WORK):
 	@mkdir -p $(WORK)

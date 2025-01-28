@@ -31,9 +31,9 @@ architecture behavioral of reg_file is
     signal reg1_r : std_logic_vector(N_REGS - 1 downto 0);
     signal reg2_r : std_logic_vector(N_REGS - 1 downto 0);
 
-    function equals(i: natural; v: std_logic_vector) return std_logic is
+    function equals(v: std_logic_vector; i: natural) return std_logic is
     begin
-        if std_logic_vector(to_unsigned(i, v'length)) = v then
+        if to_integer(unsigned(v)) = i then
             return '1';
         else
             return '0';
@@ -62,9 +62,9 @@ begin
     reg2_r(N_REGS - 1) <= reg2_addr(IMM_BIT);
 
     decoders : for i in 0 to N_REGS - 2 generate
-        reg_w(i) <= equals(i, w_addr) and not w_addr(IMM_BIT);
-        reg1_r(i) <= equals(i, reg1_addr) and not reg1_addr(IMM_BIT);
-        reg2_r(i) <= equals(i, reg2_addr) and not reg2_addr(IMM_BIT);
+        reg_w(i) <= equals(w_addr, i) and not w_addr(IMM_BIT);
+        reg1_r(i) <= equals(reg1_addr, i) and not reg1_addr(IMM_BIT);
+        reg2_r(i) <= equals(reg2_addr, i) and not reg2_addr(IMM_BIT);
     end generate;
 
     read : for i in 0 to N_REGS - 1 generate

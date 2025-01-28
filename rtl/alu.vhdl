@@ -16,36 +16,21 @@ entity alu is
 end entity;
 
 architecture rtl of alu is
-    -- Shift amount, decoded
-    signal shift : word_t;
+    alias shift_amount is in_2(SHIFT_AMOUNT_BITS - 1 downto 0);
+
     -- Shift fill value, will be '0' on logical shifts and
     -- will correspond to the sign bit on arithmetic shifts
     signal shift_fill : std_logic;
-    alias shift_amount is in_2(SHIFT_AMOUNT_BITS - 1 downto 0);
-
-    type shift_matrix_t is array (shift'range, d_out'range) of std_logic;
-
     signal barrel_in, barrel_out : word_t;
 begin
-    decode_shift : for i in shift'range generate
-        shift(i) <= '1' when to_integer(unsigned(shift_amount)) = i else '0';
-    end generate;
+    shifter : entity work.barrel_shifter port map (
+        d_in => in_1,
+        amount => shift_amount,
+        rot => rot,
+        fill => shift_fill,
+        d_out => barrel_out
+    );
 
-    barrel : for i in shift'range generate
-        signal m : shift_matrix_t;
-    begin
-        tbufs : for j in barrel_out'range generate
-            m(i, j) <= barrel_in(j) when shift(i) = '1' else 'Z';
-
-            lower_diag : if i + j >= barrel_out'length generate
-                barrel_out((i + j) mod barrel_out'length) <= 
-                        shift_fill when rot = '0' and shift(i) = '1' else m(i, j);
-            else generate
-                barrel_out(i + j) <= m(i, j);
-            end generate;            
-        end generate;
-    end generate;
-    
     do_op : process(all) is
     begin
         barrel_in <= in_1;
@@ -53,7 +38,7 @@ begin
         
         case op is
             when OP_SHL =>
-
+                d_out <= barrel_out;
             when OP_SHR | OP_SHA =>
                 -- Reverse the input bits, shift and then reverse the output 
                 -- bits, effectively shifting in the other direction
