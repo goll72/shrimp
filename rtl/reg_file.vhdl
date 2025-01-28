@@ -40,22 +40,20 @@ architecture behavioral of reg_file is
         end if;
     end function;
 begin
-    process(clk, rst, w_en) is
+    registers : for i in 0 to N_REGS - 1 generate
+        signal reg_in : word_t;
     begin
-        if rst = '1' then
-            regs <= (others => (others => '0'));
-        elsif rising_edge(clk) and w_en = '1' then
-            for i in 0 to N_REGS - 1 loop
-                if reg_w(i) = '1' then
-                    if w_word = '1' then
-                        regs(i)(15 downto 8) <= w_data(15 downto 8);
-                    end if;
-                
-                    regs(i)(7 downto 0) <= w_data(7 downto 0);
-                end if;
-            end loop;
-        end if;
-    end process;
+        reg_in <= w_data when w_word = '1' else 
+                      regs(i)(15 downto 8) & w_data(7 downto 0);
+        
+        reg : entity work.reg port map (
+            clk => clk,
+            rst => rst,
+            d => reg_in,
+            w_en => reg_w(i),
+            q => regs(i)
+        );
+    end generate;
 
     -- The bit corresponding to the immediate register
     -- passes through, the others are decoded.
