@@ -28,11 +28,11 @@ run: all
 
 yosys: all $(WORK)
 	$(MAKE) $(WORK)/$(TOP).o
-	@if ! [ -z $(TOP) ]; then \
-		yosys -m ghdl -p "ghdl --workdir=$(WORK) $(BASEGHDLFLAGS) $(TOP); $(CMD)"; \
-	else \
-		yosys -m ghdl -p "$(CMD)"; \
-	fi
+ifneq ($(TOP),)
+	yosys -m ghdl -p "ghdl --workdir=$(WORK) $(BASEGHDLFLAGS) $(TOP); $(CMD)"
+else
+	yosys -m ghdl -p "$(CMD)"
+endif
 
 $(WORK):
 	@mkdir -p $(WORK)
