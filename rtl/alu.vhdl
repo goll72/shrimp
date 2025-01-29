@@ -11,7 +11,9 @@ entity alu is
         op : in opcode_t;
         in_1, in_2 : in word_t;
         sgn, rot : in std_logic;
-        d_out : out word_t
+        d_out : out word_t;
+        carry : out std_logic;
+        overflow : out std_logic
     );
 end entity;
 
@@ -22,6 +24,11 @@ architecture rtl of alu is
     -- will correspond to the sign bit on arithmetic shifts
     signal shift_fill : std_logic;
     signal barrel_in, barrel_out : word_t;
+
+    -- carryin and second input depend on whether the operation
+    -- is addition or subtraction
+    signal carryin : std_logic;
+    signal adder_in2, adder_out: word_t;
 begin
     shifter : entity work.barrel_shifter port map (
         d_in => in_1,
@@ -29,6 +36,15 @@ begin
         rot => rot,
         fill => shift_fill,
         d_out => barrel_out
+    );
+
+    adder : entity work.adder port map (
+        d_in1 => in_1,
+        d_in2 => adder_in2,
+        cin => carryin,
+        d_out => adder_out,
+        cout => carry,
+        overflow => overflow
     );
 
     do_op : process(all) is
@@ -50,6 +66,15 @@ begin
                 if op = OP_SHA then
                     shift_fill <= in_1(in_1'high);
                 end if;
+            when OP_ADD =>
+                adder_in2 <= in_2;
+                carryin <= '0';
+                d_out <= adder_out;
+            when OP_SUB =>
+                -- a - b = a + (~b + 1)
+                adder_in2 <= not in_2;
+                carryin <= '1';
+                d_out <= adder_out;
             -- XXX
             when others =>
         end case;
