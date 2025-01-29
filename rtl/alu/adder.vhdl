@@ -34,6 +34,7 @@ entity adder is
         d_in1 : in word_t;
         d_in2 : in word_t;
         cin   : in std_logic;
+        wrd   : in std_logic;
         d_out : out word_t;
         cout  : out std_logic;
         overflow : out std_logic
@@ -63,6 +64,14 @@ begin
         );
     end generate;
 
-    cout <= carries(WORD_BITS);
-    overflow <= carries(WORD_BITS) xor carries(WORD_BITS - 1);
+    process (all)
+    begin
+        if wrd = '1' then
+            cout <= carries(WORD_BITS);
+            overflow <= carries(WORD_BITS) xor carries(WORD_BITS - 1);
+        else
+            cout <= carries(BYTE_BITS);
+            overflow <= carries(BYTE_BITS) xor carries(BYTE_BITS - 1);
+        end if;
+    end process;
 end architecture;

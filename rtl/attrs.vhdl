@@ -5,6 +5,7 @@ use ieee.math_real.log2;
 
 package attrs is
     constant WORD_BITS : natural := 16;
+    constant BYTE_BITS : natural := 8;
     constant SHIFT_AMOUNT_BITS : natural := 4;
     
     subtype word_t is std_logic_vector(WORD_BITS - 1 downto 0);

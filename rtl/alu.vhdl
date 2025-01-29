@@ -10,7 +10,7 @@ entity alu is
     port (
         op : in opcode_t;
         in_1, in_2 : in word_t;
-        sgn, rot : in std_logic;
+        sgn, rot, wrd : in std_logic;
         d_out : out word_t;
         carry : out std_logic;
         overflow : out std_logic
@@ -42,6 +42,7 @@ begin
         d_in1 => in_1,
         d_in2 => adder_in2,
         cin => carryin,
+        wrd => wrd,
         d_out => adder_out,
         cout => carry,
         overflow => overflow
