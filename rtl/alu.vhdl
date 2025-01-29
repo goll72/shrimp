@@ -31,7 +31,7 @@ architecture rtl of alu is
     signal adder_in2, adder_out: word_t;
 begin
     shifter : entity work.barrel_shifter port map (
-        d_in => in_1,
+        d_in => barrel_in,
         amount => shift_amount,
         rot => rot,
         fill => shift_fill,
