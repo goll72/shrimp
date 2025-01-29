@@ -27,7 +27,7 @@ architecture rtl of alu is
 
     -- carryin and second input depend on whether the operation
     -- is addition or subtraction
-    signal carryin : std_logic;
+    signal carryin, adder_carry, adder_overflow : std_logic;
     signal adder_in2, adder_out: word_t;
 begin
     shifter : entity work.barrel_shifter port map (
@@ -44,14 +44,17 @@ begin
         cin => carryin,
         wrd => wrd,
         d_out => adder_out,
-        cout => carry,
-        overflow => overflow
+        cout => adder_carry,
+        overflow => adder_overflow
     );
 
     do_op : process(all) is
     begin
         barrel_in <= in_1;
         shift_fill <= '0';
+
+        carry <= '0';
+        overflow <= '0';
         
         case op is
             when OP_SHL =>
@@ -71,11 +74,26 @@ begin
                 adder_in2 <= in_2;
                 carryin <= '0';
                 d_out <= adder_out;
+                carry <= adder_carry;
+                overflow <= adder_overflow;
             when OP_SUB =>
                 -- a - b = a + (~b + 1)
                 adder_in2 <= not in_2;
                 carryin <= '1';
                 d_out <= adder_out;
+                carry <= adder_carry;
+                overflow <= adder_overflow;
+            when OP_AND =>
+                d_out <= in_1 and in_2;
+            when OP_OR =>
+                d_out <= in_1 or in_2;
+            when OP_XOR =>
+                d_out <= in_1 xor in_2;
+            when OP_NOT =>
+                d_out <= not in_1;
+            when OP_MOV =>
+                -- the output is the second input
+                d_out <= in_2;
             -- XXX
             when others =>
         end case;
