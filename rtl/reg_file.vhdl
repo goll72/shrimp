@@ -62,7 +62,12 @@ begin
     reg2_r(N_REGS - 1) <= reg2_addr(IMM_BIT);
 
     decoders : for i in 0 to N_REGS - 2 generate
-        reg_w(i) <= equals(w_addr, i) and not w_addr(IMM_BIT);
+        zero_reg : if i = 0 generate
+            reg_w(i) <= '0';
+        else generate
+            reg_w(i) <= equals(w_addr, i) and not w_addr(IMM_BIT);
+        end generate;
+        
         reg1_r(i) <= equals(reg1_addr, i) and not reg1_addr(IMM_BIT);
         reg2_r(i) <= equals(reg2_addr, i) and not reg2_addr(IMM_BIT);
     end generate;
