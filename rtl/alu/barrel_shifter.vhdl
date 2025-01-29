@@ -32,7 +32,7 @@ begin
     end generate;
 
     shift_mask : for i in mask'range generate
-        mask(i) <= or(shift(i downto 1)) or rot;
+        mask(i) <= or(shift(i downto 0)) or rot;
     end generate;
 
     output : for i in d_out'range generate
