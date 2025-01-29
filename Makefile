@@ -14,6 +14,8 @@ include $(ENV).mk
 clean:
 	rm -rf $(WORK)
 
--include $(DEPS)
+ifneq ($(wildcard $(DEPS)),)
+include $(DEPS)
+endif
 
 .PHONY: all run clean
