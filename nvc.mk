@@ -7,7 +7,13 @@ EFLAGS ?= -j
 RFLAGS ?=
 
 DEPS = $(WORK)/deps.d
-STAMP = $(WORK)/done
+STAMP = $(WORK)/nvc.done
+
+ifneq ($(wildcard $(WORK)/*.done),)
+ifeq ($(wildcard $(STAMP)),)
+$(error Wrong work directory)
+endif
+endif
 
 all: $(DEPS)
 
@@ -27,4 +33,5 @@ run: all
 WORKPAT = $(subst /,\/,$(realpath $(WORK))/WORK.[A-Z0-9_]+:)
 
 $(DEPS): $(STAMP) $(SRC)
-	$(NVC) $(NVCFLAGS) --work=$(WORK) --print-deps | awk '/$(WORKPAT)/ { s = $$1; sub(":", "", s); deps = deps s " "; print $$0 " ; $$(NVC) $$(NVCFLAGS) --work=$$(WORK) -a $$(AFLAGS) $$<"; next } 1; END { print "all: " deps }' > $@
+	$(NVC) $(NVCFLAGS) --work=$(WORK) --print-deps | awk '/$(WORKPAT)/ { s = $$1; sub(":", "", s); deps = deps s " "; print $$0 " ; $$(NVC) $$(NVCFLAGS) --work=$$(WORK) -a $$(AFLAGS) $$<"; next } 1; END { print "all: " deps }' > $@.tmp
+	[ -s $@.tmp ] && mv $@.tmp $@
