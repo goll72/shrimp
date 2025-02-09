@@ -18,7 +18,7 @@ architecture behavioral of multiplier is
     -- intermediate signal to add
     type int2_t is array(15 downto 0) of word_t;
     signal int2 : int2_t;
-    signal prod : std_logic_vector(word_t'length * 2 - 1 downto 0);
+    signal prod : std_logic_vector(WORD_BITS * 2 - 1 downto 0);
     signal a, b, p : word_t; -- operands a, b, and the product
     signal a_mag, b_mag, p_mag : word_t;
     signal negative : std_logic;
@@ -61,9 +61,9 @@ begin
         -- if sgn? flag is set, then convert both inputs to signed magnitude
         if sgn = '1' then
             if wrd = '1' then
-                msb_pos := word_t'length / 2 - 1;
+                msb_pos := WORD_BITS - 1;
             else
-                msb_pos := word_t'length - 1;
+                msb_pos := BYTE_BITS - 1;
             end if;
 
             negative <= d_in1(msb_pos) xor d_in2(msb_pos);
@@ -88,13 +88,13 @@ begin
 
     -- generate the second intermediate for the first time
     p(0) <= a(0) and b(0);
-    firstop2 : for i in 1 to word_t'length - 1 generate
+    firstop2 : for i in 1 to WORD_BITS - 1 generate
     begin
         int2(0)(i - 1) <= b(0) and a(i);
     end generate;
-    int2(0)(word_t'length - 1) <= '0';
+    int2(0)(WORD_BITS - 1) <= '0';
 
-    sums : for n in 1 to p'length - 1 generate
+    sums : for n in 1 to WORD_BITS - 1 generate
         signal int1, sumout : word_t;
         signal cout : std_logic;
     begin
@@ -117,8 +117,8 @@ begin
         -- LSB of adder output is the n-th bit of the product
         -- then the carryout and remaining bits are the next intermediate word
         p(n) <= sumout(0);
-        int2(n)(word_t'length - 1) <= cout;
-        int2(n)(word_t'length - 2 downto 0) <= sumout(word_t'length - 1 downto 1);
+        int2(n)(WORD_BITS - 1) <= cout;
+        int2(n)(WORD_BITS - 2 downto 0) <= sumout(WORD_BITS - 1 downto 1);
     end generate;
     -- if any bit in the final int2 is set, then there is an overflow
     overflow <= or int2(int2_t'length - 1);
@@ -130,5 +130,11 @@ begin
         else
             d_out <= p;
         end if;
+
+		if sgn = '1' then
+			overflow <= or int2(int2_t'length - 1) or p(WORD_BITS - 1);
+		else
+			overflow <= or int2(int2_t'length - 1);
+		end if;
     end process;
 end architecture;
