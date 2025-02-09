@@ -29,6 +29,9 @@ architecture rtl of alu is
     -- is addition or subtraction
     signal carryin, adder_carry, adder_overflow : std_logic;
     signal adder_in2, adder_out: word_t;
+
+    signal multiplier_out : word_t;
+    signal multiplier_overflow : std_logic;
 begin
     shifter : entity work.barrel_shifter port map (
         d_in => barrel_in,
@@ -46,6 +49,15 @@ begin
         d_out => adder_out,
         cout => adder_carry,
         overflow => adder_overflow
+    );
+
+    multiplier : entity work.multiplier port map (
+        d_in1 => in_1,
+        d_in2 => in_2,
+        sgn => sgn,
+        wrd => wrd,
+        d_out => multiplier_out,
+        overflow => multiplier_overflow
     );
 
     do_op : process(all) is
@@ -94,6 +106,9 @@ begin
             when OP_MOV =>
                 -- the output is the second input
                 d_out <= in_2;
+            when OP_MUL =>
+                d_out <= multiplier_out;
+                overflow <= multiplier_overflow;
             -- XXX
             when others =>
         end case;
