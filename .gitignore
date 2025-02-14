@@ -1,1 +1,2 @@
-work/
+*.fst
+*.vcd

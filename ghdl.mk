@@ -36,6 +36,7 @@ endif
 
 $(WORK):
 	@mkdir -p $(WORK)
+	@echo "*" > $(WORK)/.gitignore
 
 $(WORK)/%.d: %.vhdl | $(STAMP)
 	@mkdir -p $(dir $@)

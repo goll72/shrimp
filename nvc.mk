@@ -20,6 +20,7 @@ all: $(DEPS)
 $(STAMP): Makefile
 	for i in $(SRC); do $(NVC) $(NVCFLAGS) --work=$(WORK) -a $(AFLAGS) $$i; done
 	touch $@
+	@echo "*" > $(WORK)/.gitignore
 
 # We need to run make recursively since the current run of make might be generating the depfile
 # with the info we need, and if we've reached that point we've already included the old depfile.
