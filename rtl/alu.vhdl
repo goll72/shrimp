@@ -32,6 +32,8 @@ architecture rtl of alu is
 
     signal multiplier_out : word_t;
     signal multiplier_overflow : std_logic;
+
+    signal div_quotient, div_remainder : word_t;
 begin
     shifter : entity work.barrel_shifter port map (
         d_in => barrel_in,
@@ -58,6 +60,15 @@ begin
         wrd => wrd,
         d_out => multiplier_out,
         overflow => multiplier_overflow
+    );
+
+    divider : entity work.divider port map (
+        d_in1 => in_1,
+        d_in2 => in_2,
+        sgn => sgn,
+        wrd => wrd,
+        d_out => div_quotient,
+        r_out => div_remainder
     );
 
     do_op : process(all) is
@@ -109,6 +120,10 @@ begin
             when OP_MUL =>
                 d_out <= multiplier_out;
                 overflow <= multiplier_overflow;
+            when OP_DIV =>
+                d_out <= div_quotient;
+            when OP_MOD =>
+                d_out <= div_remainder;
             -- XXX
             when others =>
         end case;
