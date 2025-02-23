@@ -5,6 +5,7 @@ SRC = rtl/attrs.vhdl              \
       rtl/alu/barrel_shifter.vhdl \
       rtl/alu/adder.vhdl          \
       rtl/alu/subtractor.vhdl     \
+      rtl/alu/magnitude.vhdl      \
       rtl/alu/multiplier.vhdl     \
       rtl/alu/divider.vhdl        \
       rtl/alu.vhdl                \
