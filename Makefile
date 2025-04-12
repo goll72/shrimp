@@ -9,6 +9,7 @@ SRC = rtl/attrs.vhdl              \
       rtl/alu/multiplier.vhdl     \
       rtl/alu/divider.vhdl        \
       rtl/alu.vhdl                \
+      rtl/control.vhdl            \
       rtl/cpu.vhdl                \
       rtl/memory.vhdl
 
