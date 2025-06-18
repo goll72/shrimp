@@ -26,12 +26,22 @@ package attrs is
     constant FLAG_P_BIT : natural := 13;
     constant FLAG_C_BIT : natural := 12;
     constant FLAG_O_BIT : natural := 11;
-    
+
+    -- IR ranges
     subtype opcode_range is natural range 15 downto 11;
+    subtype reg1_range is natural range 10 downto 7;
+    subtype reg2_range is natural range 3 downto 0;
+    subtype imm_range is natural range 3 downto 0;
 
     subtype word_t is std_logic_vector(WORD_BITS - 1 downto 0);
     subtype reg_addr_t is std_logic_vector(4 downto 0);
     subtype opcode_t is std_logic_vector(4 downto 0);
+
+    constant IMM_REG_ADDR : reg_addr_t := "11111";
+    constant SP_ADDR : reg_addr_t := "01111";
+    constant WORD_ONE : word_t := (0 => '1', others => '0'); -- the number one
+    constant TWELVE_ZEROS : std_logic_vector(11 downto 0) := "000000000000";
+    constant WORD_FIFTEEN : word_t := "0000000000001111";
 
     -- control signals
     type pc_in_sel_t is (

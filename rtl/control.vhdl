@@ -15,7 +15,10 @@ end entity;
 
 architecture dataflow of control is
     type state_t is (
+        s_reset,
         s_fetch,
+        s_wait,
+        s_decode,
         s_alu,
         s_alu2,
         s_jmp,
@@ -247,13 +250,15 @@ begin
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                next_state := s_fetch;
+                next_state := s_reset;
             end if;
 
             init_signals(ctrl);
 
             state <= next_state;
             case next_state is
+                when s_reset =>
+                    next_state := s_fetch;
                 when s_fetch =>
                     -- IR <= [PC++]
                     ctrl.pc_in_sel <= PC_IN_SEL_PC_PP;
@@ -266,7 +271,10 @@ begin
                     ctrl.mem_en <= '1';
                     ctrl.reg_w <= '0';
                     ctrl.alu_en <= '0';
-
+                    next_state := s_wait;
+                when s_wait =>
+                    next_state := s_decode;
+                when s_decode =>
                     with opcode select next_state :=
                         s_alu when OP_ADD,
                         s_alu when OP_SUB,
