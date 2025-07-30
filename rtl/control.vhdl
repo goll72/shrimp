@@ -184,7 +184,7 @@ architecture dataflow of control is
         ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG2OUT;
         ctrl.mem_in_sel <= MEM_IN_SEL_REG1OUT;
         ctrl.mem_r <= '0';
-        ctrl.mem_w <= '0';
+        ctrl.mem_w <= '1';
         ctrl.mem_en <= '1';
         -- register
         ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_IR_REG1;
@@ -310,9 +310,9 @@ begin
                     complete_alu_op(ctrl, ir);
                     next_state := s_fetch;
                 when s_jmp =>
-                    -- jump when one flag matches or when all are set
+                    -- jump when one flag matches or when none are set
                     if n = flag_n or z = flag_z or p = flag_p
-                    or c = flag_c or o = flag_o or and(n&z&p&c&o) = '1' then
+                    or c = flag_c or o = flag_o or (or(n&z&p&c&o)) = '0' then
                         if call = '1' then
                             complete_jmp_dec_sp(ctrl);
                             next_state := s_jmp_push_pc;
