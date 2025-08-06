@@ -82,6 +82,7 @@ begin
         clk => clk,
         rst => rst,
         ir => ir,
+        memout => mem_out,
         flags => flags,
         ctrl => ctrl
     );

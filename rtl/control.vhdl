@@ -8,6 +8,7 @@ entity control is
     port (
         clk, rst : in std_logic;
         ir   : in word_t; -- instruction register
+        memout : in word_t; -- memory output (used in decode)
         flags: in word_t; -- flags register
         ctrl : out ctrl_t
     );
@@ -17,7 +18,6 @@ architecture dataflow of control is
     type state_t is (
         s_reset,
         s_fetch,
-        s_wait,
         s_decode,
         s_alu,
         s_alu2,
@@ -37,7 +37,7 @@ architecture dataflow of control is
         s_bad
     );
 
-    alias opcode is ir(opcode_range);
+    alias opcode is memout(opcode_range);
     alias imm is ir(IMM_BIT);
     alias wrd is ir(WRD_BIT);
     alias sgn is ir(SGN_BIT);
@@ -271,8 +271,6 @@ begin
                     ctrl.mem_en <= '1';
                     ctrl.reg_w <= '0';
                     ctrl.alu_en <= '0';
-                    next_state := s_wait;
-                when s_wait =>
                     next_state := s_decode;
                 when s_decode =>
                     with opcode select next_state :=
