@@ -27,6 +27,7 @@ architecture dataflow of control is
         s_jmp_push_pc_fetch_imm,
         s_jmp_push_pc_finish,
         s_ret,
+        s_reti_pop_all,
         s_int,
         s_ld,
         s_ld2,
@@ -48,6 +49,7 @@ architecture dataflow of control is
     alias c is ir(C_BIT);
     alias o is ir(O_BIT);
     alias call is ir(CALL_BIT);
+    alias reti is ir(RETI_BIT);
 
     alias flag_n is flags(FLAG_N_BIT);
     alias flag_z is flags(FLAG_Z_BIT);
@@ -56,6 +58,7 @@ architecture dataflow of control is
     alias flag_o is flags(FLAG_O_BIT);
 
     signal state : state_t;
+    signal counter : std_logic_vector(3 downto 0);
 
     function shifty(opc : opcode_t) return boolean is
     begin
@@ -344,6 +347,36 @@ begin
                     complete_jmp(ctrl);
                     next_state := s_fetch;
                 when s_ret =>
+                    ctrl.pc_in_sel <= PC_IN_SEL_MEM_OUT;
+                    ctrl.pc_w <= '1';
+                    ctrl.flags_w <= '0';
+                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
+                    ctrl.mem_r <= '1';
+                    ctrl.mem_w <= '0';
+                    ctrl.mem_en <= '1';
+                    ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_REG_SP;
+                    ctrl.reg_waddr_sel <= REG_WADDR_SEL_REG_SP;
+                    ctrl.reg_in_sel <= REG_IN_SEL_ALU_OUT;
+                    ctrl.reg_word <= '1';
+                    ctrl.reg_w <= '1';
+                    ctrl.alu_opname_sel <= ALU_OPNAME_SEL_ADD;
+                    ctrl.alu_in1_sel <= ALU_IN1_SEL_REG1OUT;
+                    ctrl.alu_in2_sel <= ALU_IN2_SEL_ONE;
+                    ctrl.alu_sign <= '0';
+                    ctrl.alu_word <= '1';
+                    ctrl.alu_en <= '1';
+
+                    if reti = '1' then
+                        counter <= "1110"; -- 14
+                        next_state := s_reti_pop_all;
+                    else
+                        next_state := s_fetch;
+                    end if;
+                when s_reti_pop_all =>
+                    -- if counter = 0 then break
+                    -- pop registers(counter) from sp
+                    -- increment sp
+                    -- decrement counter
                 when s_int =>
                 when s_ld =>
                     if imm = '1' then
@@ -399,7 +432,7 @@ begin
                 when s_bad =>
                     -- uh oh...
                 when others =>
-                    -- XXX
+                    next_state := s_bad;
             end case;
         end if;
     end process;

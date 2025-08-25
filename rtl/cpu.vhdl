@@ -159,7 +159,7 @@ begin
         mem_out when REG_IN_SEL_MEM_OUT,
         alu_out when REG_IN_SEL_ALU_OUT,
         flags when REG_IN_SEL_FLAGS,
-        "000000000000" & ir(imm_range) when REG_IN_SEL_IR_IMM,
+        TWELVE_ZEROS & ir(imm_range) when REG_IN_SEL_IR_IMM,
         (others => '0') when REG_IN_SEL_SP_MM; -- TODO
 
     with ctrl.alu_opname_sel select alu_op <=

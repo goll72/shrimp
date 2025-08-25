@@ -19,6 +19,7 @@ package attrs is
     constant C_BIT : natural := 2;
     constant O_BIT : natural := 1;
     constant CALL_BIT : natural := 0;
+    constant RETI_BIT : natural := 10;
 
     -- bit offsets in the flags register
     constant FLAG_N_BIT : natural := 15;
@@ -95,7 +96,6 @@ package attrs is
         REG_IN_SEL_FLAGS,   -- flags register output
         REG_IN_SEL_IR_IMM,
         REG_IN_SEL_SP_MM    -- SP Minus Minus (sp - 1)
-
     );
 
     type alu_opname_sel_t is (
