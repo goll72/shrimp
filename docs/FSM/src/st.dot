@@ -1,0 +1,29 @@
+digraph st {
+	label="st\n--\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	FetchImm [label="Fetch Immediate"];
+	Store [label="reg.reg1addr = IR.reg1\nreg.word = 1\nmem.addr = reg.reg2out\nmem.in = reg.reg1out\nmem.r = 0\nmem.w = 1\nmem.en = 1"];
+
+	node [shape=diamond, fontname="mono"];
+	IsImm [label="imm == 1?"];
+
+	node [shape=rect, fontname="mono"];
+	Reg2 [label="reg.reg2addr = IR.reg2"];
+	RegImm [label="reg.reg2addr = 10000"];
+
+	fetch -> IsImm;
+	IsImm -> FetchImm [label="yes"];
+	IsImm -> Reg2     [label="no"];
+	
+	Reg2  -> Store    [style=bold];
+
+	FetchImm -> RegImm;
+	RegImm -> Store   [style=bold];
+
+	Store -> fetch;
+}

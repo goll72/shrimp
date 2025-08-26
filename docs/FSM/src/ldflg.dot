@@ -1,0 +1,14 @@
+digraph ldflg {
+	label="ldflg\n-----\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	Load [label="reg.waddr = IR.reg1\nreg.in = flags.out\nreg.w = 1\nreg.word = 1"];
+
+
+	fetch -> Load;
+	Load -> fetch;
+}

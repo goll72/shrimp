@@ -1,0 +1,29 @@
+digraph ALU {
+	label="add, sub, and, or, xor, not, mov, mul, div, mod\n-----------------------------------------------\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	FetchImm [label="Fetch Immediate\n---------------\nmem.addr = PC.out\nmem.w = 0\nmem.r = 1\nmem.en = 1\nreg.waddr = 10000\nreg.in = mem.out\nreg.w = 1\nreg.word = 1\n------\nPC.in = PC + 1\n PC.w = 1"];
+	ALUOp [label="Complete ALU Operation\n----------------------\nreg.reg1addr = IR.reg1\nalu.opname = IR.alu_op\nalu.sign = IR.sgn\nalu.rot = IR.rot\nalu.word = IR.wrd\nalu.in1 = reg.reg1out\nalu.in2 = reg.reg2out\nreg.waddr = IR.reg1\nreg.in = alu.out\nreg.w = 1\nreg.word = IR.wrd\n------\nflags.c = alu.carry\nflags.o = alu.overflow\nflags.n = alu.out[msb]\nflags.z = alu.out == 0\n flags.p = !n & !z"];
+
+	node [shape=diamond, fontname="mono"];
+	IsImm [label="imm == 1?"];
+
+	node [shape=rect, fontname="mono"];
+	Reg2 [label="reg.reg2addr = IR.reg2"];
+	RegImm [label="reg.reg2addr = 10000"];
+
+	fetch -> IsImm;
+	IsImm -> FetchImm [label="yes"];
+	IsImm -> Reg2     [label="no"];
+	
+	Reg2  -> ALUOp    [style=bold];
+
+	FetchImm -> RegImm;
+	RegImm -> ALUOp   [style=bold];
+
+	ALUOp -> fetch;
+}

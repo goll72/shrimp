@@ -1,0 +1,24 @@
+digraph ret {
+	label="ret, reti\n---------\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	SetPC [label="reg.reg1addr = 01111\nreg.word = 1\nmem.addr = reg.reg1out\nmem.r = 1\nmem.w = 0\nPC.in = mem.out\nPC.w = 1\n------\nIncrement SP"];
+	PopR14 [label="pop r14\nincrement sp"];
+	DotDotDot [label="..."];
+	PopR1 [label="pop r1\nincrement sp"];
+
+	node [shape=diamond, fontname="mono"];
+	IsIntr [label="IR.intr == 1?"];
+
+	fetch -> SetPC;
+	SetPC -> IsIntr;
+	IsIntr -> fetch [label="no"];
+	IsIntr -> PopR14 [label="yes"];
+	PopR14 -> DotDotDot;
+	DotDotDot -> PopR1;
+	PopR1 -> fetch;
+}

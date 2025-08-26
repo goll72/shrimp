@@ -1,0 +1,41 @@
+digraph jmp {
+	label="jmp, call\n---------\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	FetchImm [label="Fetch Immediate"];
+	DecSP [label="Decrement SP\n------------\nreg.reg1addr = 01111\nreg.waddr = 01111\nreg.in = alu.out\nreg.w = 1\nreg.word = 1\nalu.opname = SUB\nalu.in1 = reg.reg1out\nalu.in2 = 1\nalu.en = 1"];
+	PushPC [label="Push PC\n-------\nreg.reg1addr = 01111\nreg.word = 1\nmem.addr = reg.reg1out\nmem.in = PC.out\nmem.w = 1\nmem.r = 0\nmem.en"];
+	SetPC [label="PC.in = reg.reg2out\nreg.word = 1\nPC.w = 1\n"];
+
+	node [shape=diamond, fontname="mono"];
+	CheckConds [label="n == flags.n? or\nz == flags.z? or\np == flags.p? or\nc == flags.c? or\no == flags.o?"];
+	IsCall [label="IR.call == 1?"]
+	IsImm [label="imm == 1?"];
+
+	node [shape=rect, fontname="mono"];
+	Reg2 [label="reg.reg2addr = IR.reg2"];
+	RegImm [label="reg.reg2addr = 10000"];
+
+	fetch -> CheckConds;
+	CheckConds -> fetch  [label="no"];
+	CheckConds -> IsCall [label="yes"];
+
+	IsCall -> DecSP [label="yes"];
+	IsCall -> IsImm [label="no"];
+
+	IsImm -> FetchImm [label="yes"];
+	IsImm -> Reg2     [label="yes"];
+
+	FetchImm -> RegImm;
+	RegImm -> SetPC [style=bold];
+	Reg2   -> SetPC [style=bold];
+
+	DecSP -> PushPC;
+	PushPC -> IsImm;
+
+	SetPC -> fetch;
+}

@@ -1,0 +1,14 @@
+digraph stflg {
+	label="stflg\n-----\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	Store [label="reg.reg1addr = IR.reg1\nreg.word = 1\nflags.in = reg.reg1out\nflags.w = 1\n"];
+
+
+	fetch -> Store;
+	Store -> fetch;
+}

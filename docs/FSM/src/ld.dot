@@ -1,0 +1,29 @@
+digraph ld {
+	label="ld\n--\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	FetchImm [label="Fetch Immediate"];
+	Load [label="mem.addr = reg.reg2out\nmem.r = 1\nmem.w = 0\nmem.en = 1\nreg.waddr = IR.reg1\nreg.in = mem.out\nreg.w = 1\nreg.word = 1"];
+
+	node [shape=diamond, fontname="mono"];
+	IsImm [label="imm == 1?"];
+
+	node [shape=rect, fontname="mono"];
+	Reg2 [label="reg.reg2addr = IR.reg2"];
+	RegImm [label="reg.reg2addr = 10000"];
+
+	fetch -> IsImm;
+	IsImm -> FetchImm [label="yes"];
+	IsImm -> Reg2     [label="no"];
+	
+	Reg2  -> Load     [style=bold];
+
+	FetchImm -> RegImm;
+	RegImm -> Load    [style=bold];
+
+	Load -> fetch;
+}
