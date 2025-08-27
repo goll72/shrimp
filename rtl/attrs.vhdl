@@ -28,6 +28,9 @@ package attrs is
     constant FLAG_C_BIT : natural := 12;
     constant FLAG_O_BIT : natural := 11;
 
+    -- 5 bit interrupt request ID (since it can address 32 interrupt vectors)
+    subtype irq_id_t is std_logic_vector(4 downto 0);
+
     -- IR ranges
     subtype opcode_range is natural range 15 downto 11;
     subtype reg1_range is natural range 10 downto 7;
