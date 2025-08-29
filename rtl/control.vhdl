@@ -84,7 +84,14 @@ architecture dataflow of control is
         ctrl.flags_in_p_sel <= FLAGS_IN_SEL_SELF;
         ctrl.flags_in_c_sel <= FLAGS_IN_SEL_SELF;
         ctrl.flags_in_o_sel <= FLAGS_IN_SEL_SELF;
-        ctrl.flags_w <= '0';
+        ctrl.flags_in_ien_sel <= FLAGS_IN_SEL_SELF;
+        ctrl.flags_w_n <= '0';
+        ctrl.flags_w_z <= '0';
+        ctrl.flags_w_p <= '0';
+        ctrl.flags_w_c <= '0';
+        ctrl.flags_w_o <= '0';
+        ctrl.flags_w_ien <= '0';
+        ctrl.flags_w_all <= '0';
         ctrl.mem_addr_sel <= MEM_ADDR_SEL_PC;
         ctrl.mem_in_sel <= MEM_IN_SEL_REG1OUT;
         ctrl.mem_r <= '0';
@@ -109,7 +116,6 @@ architecture dataflow of control is
 
     procedure fetch_imm(signal ctrl : inout ctrl_t ; opcode : opcode_t) is
     begin
-        ctrl.flags_w <= '0';
         ctrl.alu_en <= '0';
         if shifty(opcode) then
             ctrl.pc_w <= '0';
@@ -160,7 +166,11 @@ architecture dataflow of control is
         ctrl.flags_in_p_sel <= FLAGS_IN_SEL_NEW_ALU;
         ctrl.flags_in_c_sel <= FLAGS_IN_SEL_NEW_ALU;
         ctrl.flags_in_o_sel <= FLAGS_IN_SEL_NEW_ALU;
-        ctrl.flags_w <= '1';
+        ctrl.flags_w_n <= '1';
+        ctrl.flags_w_z <= '1';
+        ctrl.flags_w_p <= '1';
+        ctrl.flags_w_c <= '1';
+        ctrl.flags_w_o <= '1';
     end procedure;
 
     procedure complete_load(signal ctrl : inout ctrl_t) is
@@ -171,9 +181,9 @@ architecture dataflow of control is
         ctrl.flags_in_n_sel <= FLAGS_IN_SEL_NEW_MEM;
         ctrl.flags_in_z_sel <= FLAGS_IN_SEL_NEW_MEM;
         ctrl.flags_in_p_sel <= FLAGS_IN_SEL_NEW_MEM;
-        ctrl.flags_in_c_sel <= FLAGS_IN_SEL_SELF;
-        ctrl.flags_in_o_sel <= FLAGS_IN_SEL_SELF;
-        ctrl.flags_w <= '1';
+        ctrl.flags_w_n <= '1';
+        ctrl.flags_w_z <= '1';
+        ctrl.flags_w_p <= '1';
         -- memory
         ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG2OUT;
         ctrl.mem_r <= '1';
@@ -191,7 +201,6 @@ architecture dataflow of control is
     begin
         ctrl.pc_w <= '0';
         ctrl.ir_w <= '0';
-        ctrl.flags_w <= '0';
         -- memory
         ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG2OUT;
         ctrl.mem_in_sel <= MEM_IN_SEL_REG1OUT;
@@ -210,7 +219,6 @@ architecture dataflow of control is
     begin
         ctrl.pc_w <= '0';
         ctrl.ir_w <= '0';
-        ctrl.flags_w <= '0';
         ctrl.mem_en <= '0';
         -- register
         ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_REG_SP;
@@ -237,7 +245,6 @@ architecture dataflow of control is
     begin
         ctrl.pc_w <= '0';
         ctrl.ir_w <= '0';
-        ctrl.flags_w <= '0';
         -- memory
         ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
         ctrl.mem_in_sel <= MEM_IN_SEL_PC;
@@ -256,7 +263,6 @@ architecture dataflow of control is
         ctrl.pc_in_sel <= PC_IN_SEL_REG2OUT;
         ctrl.pc_w <= '1';
         ctrl.ir_w <= '0';
-        ctrl.flags_w <= '0';
         ctrl.mem_en <= '0';
         ctrl.reg_word <= '1';
         ctrl.reg_w <= '0';
@@ -288,7 +294,6 @@ begin
                         ctrl.pc_in_sel <= PC_IN_SEL_PC_PP;
                         ctrl.pc_w <= '1';
                         ctrl.ir_w <= '1'; -- IR input is always mem.out
-                        ctrl.flags_w <= '0';
                         ctrl.mem_addr_sel <= MEM_ADDR_SEL_PC;
                         ctrl.mem_r <= '1';
                         ctrl.mem_w <= '0';
@@ -371,7 +376,6 @@ begin
                 when s_ret =>
                     ctrl.pc_in_sel <= PC_IN_SEL_MEM_OUT;
                     ctrl.pc_w <= '1';
-                    ctrl.flags_w <= '0';
                     ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
                     ctrl.mem_r <= '1';
                     ctrl.mem_w <= '0';
@@ -439,7 +443,6 @@ begin
                 when s_ldflg =>
                     ctrl.pc_w <= '0';
                     ctrl.ir_w <= '0';
-                    ctrl.flags_w <= '0';
                     ctrl.mem_en <= '0';
                     ctrl.reg_waddr_sel <= REG_WADDR_SEL_IR_REG1;
                     ctrl.reg_in_sel <= REG_IN_SEL_FLAGS;
@@ -450,12 +453,8 @@ begin
                 when s_stflg =>
                     ctrl.pc_w <= '0';
                     ctrl.ir_w <= '0';
-                    ctrl.flags_in_n_sel <= FLAGS_IN_SEL_NEW_REG1OUT;
-                    ctrl.flags_in_z_sel <= FLAGS_IN_SEL_NEW_REG1OUT;
-                    ctrl.flags_in_p_sel <= FLAGS_IN_SEL_NEW_REG1OUT;
-                    ctrl.flags_in_c_sel <= FLAGS_IN_SEL_NEW_REG1OUT;
-                    ctrl.flags_in_o_sel <= FLAGS_IN_SEL_NEW_REG1OUT;
-                    ctrl.flags_w <= '1';
+                    -- flags word input is always reg1out
+                    ctrl.flags_w_all <= '1';
                     ctrl.mem_en <= '0';
                     ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_IR_REG1;
                     ctrl.reg_word <= '1';

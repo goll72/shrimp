@@ -1,6 +1,7 @@
 SRC = rtl/attrs.vhdl              \
       rtl/opcode.vhdl             \
       rtl/reg.vhdl                \
+      rtl/flags.vhdl              \
       rtl/reg_file.vhdl           \
       rtl/alu/barrel_shifter.vhdl \
       rtl/alu/adder.vhdl          \

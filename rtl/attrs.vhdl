@@ -8,6 +8,7 @@ package attrs is
     constant BYTE_BITS : natural := 8;
     constant SHIFT_AMOUNT_BITS : natural := 4;
     constant IRQ_LINE_BITS : natural := 5;
+    constant MSB : natural := 15;
 
     -- bit offsets in the instruction register
     constant IMM_BIT : natural := 6;
@@ -28,6 +29,7 @@ package attrs is
     constant FLAG_P_BIT : natural := 13;
     constant FLAG_C_BIT : natural := 12;
     constant FLAG_O_BIT : natural := 11;
+    constant FLAG_IEN_BIT : natural := 10;
 
     -- IR ranges
     subtype opcode_range is natural range 15 downto 11;
@@ -42,6 +44,8 @@ package attrs is
     -- 5 bit interrupt request ID (since it can address 32 interrupt vectors)
     subtype irq_id_t is std_logic_vector(IRQ_LINE_BITS - 1 downto 0);
     subtype counter_t is integer range 0 to 15;
+    -- word without the MSB
+    subtype no_msb is natural range WORD_BITS - 2 downto 0;
 
     constant IMM_REG_ADDR : reg_addr_t := "11111";
     constant SP_ADDR : reg_addr_t := "01111";
@@ -66,7 +70,8 @@ package attrs is
         FLAGS_IN_SEL_SELF,
         FLAGS_IN_SEL_NEW_ALU,
         FLAGS_IN_SEL_NEW_MEM,
-        FLAGS_IN_SEL_NEW_REG1OUT
+        FLAGS_IN_SEL_NEW_HI,
+        FLAGS_IN_SEL_NEW_LO
     );
 
     type mem_addr_sel_t is (
@@ -140,11 +145,18 @@ package attrs is
         ir_w             : std_logic;
 
         flags_in_n_sel   : flags_in_sel_t;
+        flags_w_n        : std_logic;
         flags_in_z_sel   : flags_in_sel_t;
+        flags_w_z        : std_logic;
         flags_in_p_sel   : flags_in_sel_t;
+        flags_w_p        : std_logic;
         flags_in_c_sel   : flags_in_sel_t;
+        flags_w_c        : std_logic;
         flags_in_o_sel   : flags_in_sel_t;
-        flags_w          : std_logic;
+        flags_w_o        : std_logic;
+        flags_in_ien_sel : flags_in_sel_t;
+        flags_w_ien      : std_logic;
+        flags_w_all      : std_logic;
 
         mem_addr_sel     : mem_addr_sel_t;
         mem_in_sel       : mem_in_sel_t;

@@ -19,6 +19,8 @@ architecture structural of cpu is
     signal ctrl : ctrl_t;
     signal ir, ir_in, ir_ivec : word_t;
     signal pc, pc_in, pc_pp, pc_hard, pc_soft : word_t;
+    signal flag_n_in, flag_z_in, flag_p_in, flag_c_in ,flag_o_in, flag_ien_in : std_logic;
+    signal flag_d, flags : word_t;
     signal mem_in, mem_out, mem_addr : word_t;
     signal reg_waddr, reg1addr, reg2addr : reg_addr_t;
     signal reg_in, reg1out, reg2out, reg1_ivec : word_t;
@@ -29,7 +31,13 @@ architecture structural of cpu is
     signal soft_irq_id, asserted_irq_id : irq_id_t;
 
     signal counter : counter_t;
-    signal flags : word_t; -- TODO
+
+    alias flag_n is flags(FLAG_N_BIT);
+    alias flag_z is flags(FLAG_Z_BIT);
+    alias flag_p is flags(FLAG_P_BIT);
+    alias flag_c is flags(FLAG_C_BIT);
+    alias flag_o is flags(FLAG_O_BIT);
+    alias flag_ien is flags(FLAG_IEN_BIT);
 
     function vectorize_counter(signal counter : in counter_t) return reg_addr_t is
     begin
@@ -50,6 +58,19 @@ begin
         w_en => ctrl.pc_w,
         q => pc,
         d => pc_in
+    );
+
+    flags_reg : entity work.flags port map (
+        clk => clk,
+        rst => rst,
+        n_in => flag_n_in, w_n => ctrl.flags_w_n,
+        z_in => flag_z_in, w_z => ctrl.flags_w_z,
+        p_in => flag_p_in, w_p => ctrl.flags_w_p,
+        c_in => flag_c_in, w_c => ctrl.flags_w_c,
+        o_in => flag_o_in, w_o => ctrl.flags_w_o,
+        ien_in => flag_ien_in, w_ien => ctrl.flags_w_ien,
+        d => flag_d, w_word => ctrl.flags_w_all,
+        q => flags
     );
 
     RAM : entity work.memory port map (
@@ -106,8 +127,7 @@ begin
         hard_id => (others => '0'), -- only 1 irq line
         soft_id => soft_irq_id,
         claim => irc_claim,
---        en => irc_en,
-        en => '1',
+        en => flags(FLAG_IEN_BIT),
         rst => rst,
         asserted_irq => asserted_irq,
         asserted_hard => asserted_hard,
@@ -175,7 +195,47 @@ begin
         reg2out when PC_IN_SEL_REG2OUT,
         mem_out when PC_IN_SEL_MEM_OUT;
 
-    -- with ctrl.flags_in_sel select ...
+    -- only set on stflg
+    flag_d <= reg1out;
+
+    -- flags are set to 'Z' if the select doesn't make sense
+    -- for the given flag
+    with ctrl.flags_in_n_sel select flag_n_in <=
+        flag_n when FLAGS_IN_SEL_SELF,
+        alu_out(MSB) when FLAGS_IN_SEL_NEW_ALU,
+        mem_out(MSB) when FLAGS_IN_SEL_NEW_MEM,
+        '1' when FLAGS_IN_SEL_NEW_HI,
+        '0' when FLAGS_IN_SEL_NEW_LO;
+    with ctrl.flags_in_z_sel select flag_z_in <=
+        flag_z when FLAGS_IN_SEL_SELF,
+        not (or alu_out) when FLAGS_IN_SEL_NEW_ALU,
+        not (or mem_out) when FLAGS_IN_SEL_NEW_MEM,
+        '1' when FLAGS_IN_SEL_NEW_HI,
+        '0' when FLAGS_IN_SEL_NEW_LO;
+    with ctrl.flags_in_p_sel select flag_p_in <=
+        flag_p when FLAGS_IN_SEL_SELF,
+        (not alu_out(msb)) and (or alu_out(no_msb)) when FLAGS_IN_SEL_NEW_ALU,
+        (not mem_out(msb)) and (or mem_out(no_msb)) when FLAGS_IN_SEL_NEW_MEM,
+        '1' when FLAGS_IN_SEL_NEW_HI,
+        '0' when FLAGS_IN_SEL_NEW_LO;
+    with ctrl.flags_in_c_sel select flag_c_in <=
+        flag_c when FLAGS_IN_SEL_SELF,
+        alu_c when FLAGS_IN_SEL_NEW_ALU,
+        'Z' when FLAGS_IN_SEL_NEW_MEM,
+        '1' when FLAGS_IN_SEL_NEW_HI,
+        '0' when FLAGS_IN_SEL_NEW_LO;
+    with ctrl.flags_in_o_sel select flag_o_in <=
+        flag_o when FLAGS_IN_SEL_SELF,
+        alu_o when FLAGS_IN_SEL_NEW_ALU,
+        'Z' when FLAGS_IN_SEL_NEW_MEM,
+        '1' when FLAGS_IN_SEL_NEW_HI,
+        '0' when FLAGS_IN_SEL_NEW_LO;
+    with ctrl.flags_in_ien_sel select flag_ien_in <=
+        flag_ien when FLAGS_IN_SEL_SELF,
+        'Z' when FLAGS_IN_SEL_NEW_ALU,
+        'Z' when FLAGS_IN_SEL_NEW_MEM,
+        '1' when FLAGS_IN_SEL_NEW_HI,
+        '0' when FLAGS_IN_SEL_NEW_LO;
 
     with ctrl.mem_addr_sel select mem_addr <=
         pc when MEM_ADDR_SEL_PC,
