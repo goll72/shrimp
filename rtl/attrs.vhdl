@@ -7,6 +7,7 @@ package attrs is
     constant WORD_BITS : natural := 16;
     constant BYTE_BITS : natural := 8;
     constant SHIFT_AMOUNT_BITS : natural := 4;
+    constant IRQ_LINE_BITS : natural := 5;
 
     -- bit offsets in the instruction register
     constant IMM_BIT : natural := 6;
@@ -28,24 +29,29 @@ package attrs is
     constant FLAG_C_BIT : natural := 12;
     constant FLAG_O_BIT : natural := 11;
 
-    -- 5 bit interrupt request ID (since it can address 32 interrupt vectors)
-    subtype irq_id_t is std_logic_vector(4 downto 0);
-
     -- IR ranges
     subtype opcode_range is natural range 15 downto 11;
     subtype reg1_range is natural range 10 downto 7;
     subtype reg2_range is natural range 3 downto 0;
     subtype imm_range is natural range 3 downto 0;
+    subtype int_imm_range is natural range 4 downto 0;
 
     subtype word_t is std_logic_vector(WORD_BITS - 1 downto 0);
     subtype reg_addr_t is std_logic_vector(4 downto 0);
     subtype opcode_t is std_logic_vector(4 downto 0);
+    -- 5 bit interrupt request ID (since it can address 32 interrupt vectors)
+    subtype irq_id_t is std_logic_vector(IRQ_LINE_BITS - 1 downto 0);
+    subtype counter_t is integer range 0 to 15;
 
     constant IMM_REG_ADDR : reg_addr_t := "11111";
     constant SP_ADDR : reg_addr_t := "01111";
     constant WORD_ONE : word_t := (0 => '1', others => '0'); -- the number one
     constant TWELVE_ZEROS : std_logic_vector(11 downto 0) := "000000000000";
+    constant ELEVEN_ZEROS : std_logic_vector(10 downto 0) := "00000000000";
     constant WORD_FIFTEEN : word_t := "0000000000001111";
+    -- PC offsets for interrupts
+    constant WORD_HARD_OFF : word_t := "0000000000010000";
+    constant WORD_SOFT_OFF : word_t := "0000000000110000";
 
     -- control signals
     type pc_in_sel_t is (
@@ -53,7 +59,9 @@ package attrs is
         PC_IN_SEL_IR_REG2, -- interrupt vector from IR (+ 0xF)
         PC_IN_SEL_REG1OUT, -- register 1 output (+ 0xF)
         PC_IN_SEL_REG2OUT, -- register 2 output directly
-        PC_IN_SEL_MEM_OUT
+        PC_IN_SEL_MEM_OUT,
+        PC_IN_SEL_HARD_ID, -- hard interrupt id + 0x10
+        PC_IN_SEL_SOFT_ID  -- soft interrupt id + 0x30
     );
 
     type flags_in_sel_t is (
@@ -71,7 +79,9 @@ package attrs is
 
     type mem_in_sel_t is (
         MEM_IN_SEL_PC,
-        MEM_IN_SEL_REG1OUT
+        MEM_IN_SEL_REG1OUT,
+        MEM_IN_SEL_REG2OUT,
+        MEM_IN_SEL_FLAGS
     );
 
     type reg_reg1addr_sel_t is (
@@ -84,7 +94,8 @@ package attrs is
     type reg_reg2addr_sel_t is (
         REG_REG2ADDR_SEL_REG_IMM,
         REG_REG2ADDR_SEL_IR_REG1,
-        REG_REG2ADDR_SEL_IR_REG2
+        REG_REG2ADDR_SEL_IR_REG2,
+        REG_REG2ADDR_SEL_COUNTER
     );
 
     type reg_waddr_sel_t is (
@@ -114,6 +125,12 @@ package attrs is
     type alu_in2_sel_t is (
         ALU_IN2_SEL_REG2OUT,
         ALU_IN2_SEL_ONE       -- the number one
+    );
+
+    type irc_soft_id_sel_t is (
+        IRC_SOFT_ID_SEL_IR_IMM,
+        IRC_SOFT_ID_SEL_REG1OUT,
+        IRC_SOFT_ID_SEL_NOTHING
     );
 
     type ctrl_t is record
@@ -149,5 +166,8 @@ package attrs is
         alu_rot          : std_logic;
         alu_word         : std_logic;
         alu_en           : std_logic;
+
+        irc_soft_irq     : std_logic;
+        irc_soft_id_sel  : irc_soft_id_sel_t;
     end record;
 end package;

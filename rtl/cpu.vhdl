@@ -9,6 +9,7 @@ use work.opcode.all;
 entity cpu is
     port (
         clk, rst : in std_logic;
+        irq : in std_logic;
         d_in : in word_t;
         d_out : out word_t
     );
@@ -17,15 +18,23 @@ end entity;
 architecture structural of cpu is
     signal ctrl : ctrl_t;
     signal ir, ir_in, ir_ivec : word_t;
-    signal pc, pc_in, pc_pp : word_t;
+    signal pc, pc_in, pc_pp, pc_hard, pc_soft : word_t;
     signal mem_in, mem_out, mem_addr : word_t;
     signal reg_waddr, reg1addr, reg2addr : reg_addr_t;
     signal reg_in, reg1out, reg2out, reg1_ivec : word_t;
     signal alu_op : opcode_t;
     signal alu_in1, alu_in2, alu_out : word_t;
     signal alu_c, alu_o : std_logic;
+    signal irc_claim, irc_en, asserted_irq, asserted_hard : std_logic;
+    signal soft_irq_id, asserted_irq_id : irq_id_t;
 
+    signal counter : counter_t;
     signal flags : word_t; -- TODO
+
+    function vectorize_counter(signal counter : in counter_t) return reg_addr_t is
+    begin
+        return std_logic_vector(to_unsigned(counter, reg_addr_t'length));
+    end function;
 begin
     IR_reg : entity work.reg port map (
         clk => clk,
@@ -84,7 +93,25 @@ begin
         ir => ir,
         memout => mem_out,
         flags => flags,
-        ctrl => ctrl
+        irq => asserted_irq,
+        hard_irq => asserted_hard,
+        irq_id => asserted_irq_id,
+        ctrl => ctrl,
+        counter => counter
+    );
+
+    IRC : entity work.irc port map (
+        hard_irq => irq,
+        soft_irq => ctrl.irc_soft_irq,
+        hard_id => (others => '0'), -- only 1 irq line
+        soft_id => soft_irq_id,
+        claim => irc_claim,
+--        en => irc_en,
+        en => '1',
+        rst => rst,
+        asserted_irq => asserted_irq,
+        asserted_hard => asserted_hard,
+        asserted_id => asserted_irq_id
     );
 
     PC_plus_one : entity work.adder port map (
@@ -93,6 +120,26 @@ begin
         cin => '1',
         wrd => '1',
         d_out => pc_pp,
+        cout => open,
+        overflow => open
+    );
+
+    PC_hard_adder : entity work.adder port map (
+        d_in1 => ELEVEN_ZEROS & asserted_irq_id,
+        d_in2 => WORD_HARD_OFF,
+        cin => '0',
+        wrd => '1',
+        d_out => pc_hard,
+        cout => open,
+        overflow => open
+    );
+
+    PC_soft_adder : entity work.adder port map (
+        d_in1 => ELEVEN_ZEROS & asserted_irq_id,
+        d_in2 => WORD_SOFT_OFF,
+        cin => '0',
+        wrd => '1',
+        d_out => pc_soft,
         cout => open,
         overflow => open
     );
@@ -126,7 +173,9 @@ begin
         ir_ivec when PC_IN_SEL_IR_REG2,
         reg1_ivec when PC_IN_SEL_REG1OUT,
         reg2out when PC_IN_SEL_REG2OUT,
-        mem_out when PC_IN_SEL_MEM_OUT;
+        mem_out when PC_IN_SEL_MEM_OUT,
+        pc_hard when PC_IN_SEL_HARD_ID,
+        pc_soft when PC_IN_SEL_SOFT_ID;
 
     -- with ctrl.flags_in_sel select ...
 
@@ -137,7 +186,9 @@ begin
 
     with ctrl.mem_in_sel select mem_in <=
         pc when MEM_IN_SEL_PC,
-        reg1out when MEM_IN_SEL_REG1OUT;
+        reg1out when MEM_IN_SEL_REG1OUT,
+        reg2out when MEM_IN_SEL_REG2OUT,
+        flags when MEM_IN_SEL_FLAGS;
 
     with ctrl.reg_reg1addr_sel select reg1addr <=
         IMM_REG_ADDR when REG_REG1ADDR_SEL_REG_IMM,
@@ -148,7 +199,8 @@ begin
     with ctrl.reg_reg2addr_sel select reg2addr <=
         IMM_REG_ADDR when REG_REG2ADDR_SEL_REG_IMM,
         '0' & ir(reg1_range) when REG_REG2ADDR_SEL_IR_REG1,
-        '0' & ir(reg2_range) when REG_REG2ADDR_SEL_IR_REG2;
+        '0' & ir(reg2_range) when REG_REG2ADDR_SEL_IR_REG2,
+        vectorize_counter(counter) when REG_REG2ADDR_SEL_COUNTER;
 
     with ctrl.reg_waddr_sel select reg_waddr <=
         IMM_REG_ADDR when REG_WADDR_SEL_REG_IMM,
@@ -173,4 +225,9 @@ begin
     with ctrl.alu_in2_sel select alu_in2 <=
         reg2out when ALU_IN2_SEL_REG2OUT,
         WORD_ONE when ALU_IN2_SEL_ONE;
+
+    with ctrl.irc_soft_id_sel select soft_irq_id <=
+        ir(int_imm_range) when IRC_SOFT_ID_SEL_IR_IMM,
+        reg1out(soft_irq_id'range) when IRC_SOFT_ID_SEL_REG1OUT,
+        (others => '0') when IRC_SOFT_ID_SEL_NOTHING;
 end architecture;

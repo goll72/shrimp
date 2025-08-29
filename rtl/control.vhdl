@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 use work.attrs.all;
 use work.opcode.all;
@@ -10,7 +11,10 @@ entity control is
         ir   : in word_t; -- instruction register
         memout : in word_t; -- memory output (used in decode)
         flags: in word_t; -- flags register
-        ctrl : out ctrl_t
+        irq, hard_irq : in std_logic;
+        irq_id : in irq_id_t;
+        ctrl : out ctrl_t;
+        counter : out counter_t
     );
 end entity;
 
@@ -35,6 +39,9 @@ architecture dataflow of control is
         s_st2,
         s_ldflg,
         s_stflg,
+        s_irq,
+        s_irq_push_pc,
+        s_irq_push_flags,
         s_bad
     );
 
@@ -58,7 +65,6 @@ architecture dataflow of control is
     alias flag_o is flags(FLAG_O_BIT);
 
     signal state : state_t;
-    signal counter : std_logic_vector(3 downto 0);
 
     function shifty(opc : opcode_t) return boolean is
     begin
@@ -96,6 +102,8 @@ architecture dataflow of control is
         ctrl.alu_rot <= '0';
         ctrl.alu_word <= '0';
         ctrl.alu_en <= '0';
+        ctrl.irc_soft_irq <= '0';
+        ctrl.irc_soft_id_sel <= IRC_SOFT_ID_SEL_NOTHING;
     end procedure;
 
     procedure fetch_imm(signal ctrl : inout ctrl_t ; opcode : opcode_t) is
@@ -197,7 +205,7 @@ architecture dataflow of control is
     end procedure;
 
     -- decrement stack pointer
-    procedure complete_jmp_dec_sp(signal ctrl : inout ctrl_t) is
+    procedure dec_sp(signal ctrl : inout ctrl_t) is
     begin
         ctrl.pc_w <= '0';
         ctrl.ir_w <= '0';
@@ -216,6 +224,11 @@ architecture dataflow of control is
         ctrl.alu_sign <= '0';
         ctrl.alu_word <= '1';
         ctrl.alu_en <= '1';
+    end procedure;
+
+    procedure complete_jmp_dec_sp(signal ctrl : inout ctrl_t) is
+    begin
+        dec_sp(ctrl);
     end procedure;
 
     -- push PC to stack
@@ -261,20 +274,28 @@ begin
             state <= next_state;
             case next_state is
                 when s_reset =>
+                    counter <= 0;
                     next_state := s_fetch;
                 when s_fetch =>
-                    -- IR <= [PC++]
-                    ctrl.pc_in_sel <= PC_IN_SEL_PC_PP;
-                    ctrl.pc_w <= '1';
-                    ctrl.ir_w <= '1'; -- IR input is always mem.out
-                    ctrl.flags_w <= '0';
-                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_PC;
-                    ctrl.mem_r <= '1';
-                    ctrl.mem_w <= '0';
-                    ctrl.mem_en <= '1';
-                    ctrl.reg_w <= '0';
-                    ctrl.alu_en <= '0';
-                    next_state := s_decode;
+                    if irq = '1' then
+                        -- incremented immediately in the next state
+                        counter <= 0;
+                        dec_sp(ctrl);
+                        next_state := s_irq;
+                    else
+                        -- IR <= [PC++]
+                        ctrl.pc_in_sel <= PC_IN_SEL_PC_PP;
+                        ctrl.pc_w <= '1';
+                        ctrl.ir_w <= '1'; -- IR input is always mem.out
+                        ctrl.flags_w <= '0';
+                        ctrl.mem_addr_sel <= MEM_ADDR_SEL_PC;
+                        ctrl.mem_r <= '1';
+                        ctrl.mem_w <= '0';
+                        ctrl.mem_en <= '1';
+                        ctrl.reg_w <= '0';
+                        ctrl.alu_en <= '0';
+                        next_state := s_decode;
+                    end if;
                 when s_decode =>
                     with opcode select next_state :=
                         s_alu when OP_ADD,
@@ -313,7 +334,7 @@ begin
                 when s_jmp =>
                     -- jump when one flag matches or when none are set
                     if n = flag_n or z = flag_z or p = flag_p
-                    or c = flag_c or o = flag_o or (or(n&z&p&c&o)) = '0' then
+                    or c = flag_c or o = flag_o or (or std_logic_vector'(n&z&p&c&o)) = '0' then
                         if call = '1' then
                             complete_jmp_dec_sp(ctrl);
                             next_state := s_jmp_push_pc;
@@ -367,7 +388,7 @@ begin
                     ctrl.alu_en <= '1';
 
                     if reti = '1' then
-                        counter <= "1110"; -- 14
+                        counter <= 14;
                         next_state := s_reti_pop_all;
                     else
                         next_state := s_fetch;
@@ -378,6 +399,16 @@ begin
                     -- increment sp
                     -- decrement counter
                 when s_int =>
+                    ctrl.irc_soft_irq <= '1';
+                    if imm = '1' then
+                        ctrl.irc_soft_id_sel <= IRC_SOFT_ID_SEL_IR_IMM;
+                    else
+                        ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_IR_REG2;
+                        ctrl.reg_word <= '1';
+                        ctrl.reg_w <= '0';
+                        ctrl.irc_soft_id_sel <= IRC_SOFT_ID_SEL_REG1OUT;
+                    end if;
+                    next_state := s_fetch;
                 when s_ld =>
                     if imm = '1' then
                         fetch_imm(ctrl, opcode);
@@ -428,6 +459,47 @@ begin
                     ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_IR_REG1;
                     ctrl.reg_word <= '1';
                     ctrl.reg_w <= '0';
+                    next_state := s_fetch;
+                when s_irq =>
+                    -- push r1 through r14 inclusive
+                    dec_sp(ctrl);
+                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT; -- sp
+                    ctrl.mem_in_sel <= MEM_IN_SEL_REG2OUT;
+                    ctrl.mem_r <= '0';
+                    ctrl.mem_w <= '1';
+                    ctrl.mem_en <= '1';
+                    ctrl.reg_reg2addr_sel <= REG_REG2ADDR_SEL_COUNTER;
+                    counter <= counter + 1;
+                    if counter + 1 = 14 then
+                        next_state := s_irq_push_pc;
+                    else
+                        next_state := s_irq;
+                    end if;
+                when s_irq_push_pc =>
+                    dec_sp(ctrl);
+                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
+                    ctrl.mem_in_sel <= MEM_IN_SEL_PC;
+                    ctrl.mem_r <= '0';
+                    ctrl.mem_w <= '1';
+                    ctrl.mem_en <= '1';
+                    next_state := s_irq_push_flags;
+                when s_irq_push_flags =>
+                    -- no need to dec sp
+                    ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_REG_SP;
+                    ctrl.reg_word <= '1';
+                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
+                    ctrl.mem_in_sel <= MEM_IN_SEL_FLAGS;
+                    ctrl.mem_r <= '0';
+                    ctrl.mem_w <= '1';
+                    ctrl.mem_en <= '1';
+                    -- set PC
+                    if hard_irq = '1' then
+                        ctrl.pc_in_sel <= PC_IN_SEL_HARD_ID;
+                    else
+                        ctrl.pc_in_sel <= PC_IN_SEL_SOFT_ID;
+                    end if;
+                    -- TODO disable interrupts
+                    ctrl.pc_w <= '1';
                     next_state := s_fetch;
                 when s_bad =>
                     -- uh oh...
