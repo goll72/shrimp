@@ -28,7 +28,7 @@ digraph jmp {
 	IsCall -> IsImm [label="no"];
 
 	IsImm -> FetchImm [label="yes"];
-	IsImm -> Reg2     [label="yes"];
+	IsImm -> Reg2     [label="no"];
 
 	FetchImm -> RegImm;
 	RegImm -> SetPC [style=bold];

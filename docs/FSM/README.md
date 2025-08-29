@@ -3,6 +3,7 @@
 The FSM for SHRIMP's control unit is detailed in the corresponding images:
 
 * [Fetch](fetch.png)
+* [Interrupt request](irq.png)
 * [ALU instructions (add, sub, and, or, xor, not, mov, mul, div, mod)](ALU.png)
 * [Instructions using the shifter (sha, shl, shr, ror, rol)](shifting.png)
 * [ld instruction](ld.png)
@@ -11,4 +12,4 @@ The FSM for SHRIMP's control unit is detailed in the corresponding images:
 * [stflg instruction](stflg.png)
 * [jmp and call instructions](jmp.png)
 * [ret and reti instructions](ret.png)
-* int instruction (WIP)
+* [int instruction](int.png)

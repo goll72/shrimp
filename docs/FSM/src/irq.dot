@@ -1,0 +1,32 @@
+digraph ld {
+	label="irq\n---\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	s_irq [label="decrement sp\nmem.addr = reg.reg1out\nmem.in = reg.reg2out\nmem.w = 1\nmem.en = 1\nreg.reg2addr = counter\ncounter = counter + 1"];
+	s_irq_push_pc [label="decrement sp\nmem.addr = reg.reg1out\nmem.in = pc\nmem.w = 1\nmem.en = 1"];
+	s_irq_push_flags [label="pc.w = 1\nreg.reg1addr = sp\nreg.word = 1\nmem.addr = reg.reg1out\nmem.in = flags\nmem.w = 1\nmem.en = 1\nflags.irq_en = 0"];
+
+	node [shape=diamond, fontname="mono"];
+	max_counter [label="counter + 1 == 14?"];
+	hard_irq [label="irc.hard_irq == 1?"];
+
+	node [shape=rect, fontname="mono"];
+	pc_sel_hard [label="pc.in = 0x10 + irc.irq_id"];
+	pc_sel_soft [label="pc.in = 0x30 + irc.irq_id"];
+
+
+	fetch -> s_irq;
+	s_irq -> max_counter;
+	max_counter -> s_irq_push_pc [label="yes"];
+	max_counter -> s_irq [label="no", constraint=false];
+	s_irq_push_pc -> hard_irq;
+	hard_irq -> pc_sel_hard [label="yes"];
+	hard_irq -> pc_sel_soft [label="no"];
+	pc_sel_hard -> s_irq_push_flags [style=bold];
+	pc_sel_soft -> s_irq_push_flags [style=bold];
+	s_irq_push_flags -> fetch;
+}

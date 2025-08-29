@@ -1,0 +1,24 @@
+digraph int {
+	label="int\n---\n";
+	labelloc="t";
+	fontsize=20;
+	fontname="mono";
+
+	node [shape=oval, fontname="mono"];
+	fetch [style=dashed];
+	Irq [label="irc.softirq = 1"];
+
+	node [shape=diamond, fontname="mono"];
+	IsImm [label="imm == 1?"];
+
+	node [shape=rect, fontname="mono"];
+	IRImm [label="irc.softid = IR.softid"];
+	Reg [label="reg.reg1addr = IR.reg2\nreg.word = 1\nirc.softid = reg.reg1out"];
+
+	fetch -> IsImm;
+	IsImm -> IRImm [label="yes"];
+	IsImm -> Reg   [label="no"];
+	IRImm -> Irq [style=bold];
+	Reg   -> Irq [style=bold];
+	Irq -> fetch;
+}
