@@ -42,6 +42,7 @@ architecture dataflow of control is
         s_irq,
         s_irq_push_pc,
         s_irq_push_flags,
+        s_irq_fetch_pc,
         s_bad
     );
 
@@ -492,14 +493,19 @@ begin
                     ctrl.mem_r <= '0';
                     ctrl.mem_w <= '1';
                     ctrl.mem_en <= '1';
+                    next_state := s_irq_fetch_pc;
+                when s_irq_fetch_pc =>
                     -- set PC
                     if hard_irq = '1' then
-                        ctrl.pc_in_sel <= PC_IN_SEL_HARD_ID;
+                        ctrl.mem_addr_sel <= MEM_ADDR_SEL_HARD_ID;
                     else
-                        ctrl.pc_in_sel <= PC_IN_SEL_SOFT_ID;
+                        ctrl.mem_addr_sel <= MEM_ADDR_SEL_SOFT_ID;
                     end if;
-                    -- TODO disable interrupts
+                    ctrl.mem_r <= '1';
+                    ctrl.mem_en <= '1';
+                    ctrl.pc_in_sel <= PC_IN_SEL_MEM_OUT;
                     ctrl.pc_w <= '1';
+                    -- TODO disable interrupts
                     next_state := s_fetch;
                 when s_bad =>
                     -- uh oh...

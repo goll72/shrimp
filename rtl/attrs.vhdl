@@ -59,9 +59,7 @@ package attrs is
         PC_IN_SEL_IR_REG2, -- interrupt vector from IR (+ 0xF)
         PC_IN_SEL_REG1OUT, -- register 1 output (+ 0xF)
         PC_IN_SEL_REG2OUT, -- register 2 output directly
-        PC_IN_SEL_MEM_OUT,
-        PC_IN_SEL_HARD_ID, -- hard interrupt id + 0x10
-        PC_IN_SEL_SOFT_ID  -- soft interrupt id + 0x30
+        PC_IN_SEL_MEM_OUT
     );
 
     type flags_in_sel_t is (
@@ -74,7 +72,9 @@ package attrs is
     type mem_addr_sel_t is (
         MEM_ADDR_SEL_PC,
         MEM_ADDR_SEL_REG1OUT,
-        MEM_ADDR_SEL_REG2OUT
+        MEM_ADDR_SEL_REG2OUT,
+        MEM_ADDR_SEL_HARD_ID, -- hard interrupt id + 0x10
+        MEM_ADDR_SEL_SOFT_ID  -- soft interrupt id + 0x30
     );
 
     type mem_in_sel_t is (

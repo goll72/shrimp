@@ -173,16 +173,16 @@ begin
         ir_ivec when PC_IN_SEL_IR_REG2,
         reg1_ivec when PC_IN_SEL_REG1OUT,
         reg2out when PC_IN_SEL_REG2OUT,
-        mem_out when PC_IN_SEL_MEM_OUT,
-        pc_hard when PC_IN_SEL_HARD_ID,
-        pc_soft when PC_IN_SEL_SOFT_ID;
+        mem_out when PC_IN_SEL_MEM_OUT;
 
     -- with ctrl.flags_in_sel select ...
 
     with ctrl.mem_addr_sel select mem_addr <=
         pc when MEM_ADDR_SEL_PC,
         reg1out when MEM_ADDR_SEL_REG1OUT,
-        reg2out when MEM_ADDR_SEL_REG2OUT;
+        reg2out when MEM_ADDR_SEL_REG2OUT,
+        pc_hard when MEM_ADDR_SEL_HARD_ID,
+        pc_soft when MEM_ADDR_SEL_SOFT_ID;
 
     with ctrl.mem_in_sel select mem_in <=
         pc when MEM_IN_SEL_PC,
