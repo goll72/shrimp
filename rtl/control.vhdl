@@ -76,6 +76,12 @@ architecture dataflow of control is
         return opc = OP_SHA or opc = OP_SHL or opc = OP_SHR;
     end function;
 
+    -- jmp conditionals
+    function cond(a : std_logic ; b : std_logic) return boolean is
+    begin
+        return a = '1' and a = b;
+    end function;
+
     -- initialize all the signals, prevents latching
     -- most assignments are arbitary, enable signals are forced low
     procedure init_signals(signal ctrl : inout ctrl_t) is
@@ -369,8 +375,9 @@ begin
                     next_state := s_fetch;
                 when s_jmp =>
                     -- jump when one flag matches or when none are set
-                    if n = flag_n or z = flag_z or p = flag_p
-                    or c = flag_c or o = flag_o or (or std_logic_vector'(n&z&p&c&o)) = '0' then
+                    if cond(n, flag_n) or cond(z, flag_z) or cond(p, flag_p)
+                    or cond(c, flag_c) or cond(o, flag_o)
+                    or (or std_logic_vector'(n&z&p&c&o)) = '0' then
                         if call = '1' then
                             complete_jmp_dec_sp(ctrl);
                             next_state := s_jmp_push_pc;
