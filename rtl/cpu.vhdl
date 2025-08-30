@@ -27,7 +27,7 @@ architecture structural of cpu is
     signal alu_op : opcode_t;
     signal alu_in1, alu_in2, alu_out : word_t;
     signal alu_c, alu_o : std_logic;
-    signal irc_claim, irc_en, asserted_irq, asserted_hard : std_logic;
+    signal irc_en, asserted_irq, asserted_hard : std_logic;
     signal soft_irq_id, asserted_irq_id : irq_id_t;
 
     signal counter : counter_t;
@@ -126,7 +126,7 @@ begin
         soft_irq => ctrl.irc_soft_irq,
         hard_id => (others => '0'), -- only 1 irq line
         soft_id => soft_irq_id,
-        claim => irc_claim,
+        claim => ctrl.irc_claim,
         en => flags(FLAG_IEN_BIT),
         rst => rst,
         asserted_irq => asserted_irq,
@@ -195,9 +195,9 @@ begin
         reg2out when PC_IN_SEL_REG2OUT,
         mem_out when PC_IN_SEL_MEM_OUT;
 
-    -- only set on stflg
-    flag_d <= reg1out;
-
+    with ctrl.flags_in_all_sel select flag_d <=
+        mem_out when FLAGS_IN_ALL_SEL_MEM_OUT,
+        reg1out when FLAGS_IN_ALL_SEL_REG1OUT;
     -- flags are set to 'Z' if the select doesn't make sense
     -- for the given flag
     with ctrl.flags_in_n_sel select flag_n_in <=
@@ -265,7 +265,8 @@ begin
     with ctrl.reg_waddr_sel select reg_waddr <=
         IMM_REG_ADDR when REG_WADDR_SEL_REG_IMM,
         '0' & ir(reg1_range) when REG_WADDR_SEL_IR_REG1,
-        SP_ADDR when REG_WADDR_SEL_REG_SP;
+        SP_ADDR when REG_WADDR_SEL_REG_SP,
+        vectorize_counter(counter) when REG_WADDR_SEL_COUNTER;
 
     with ctrl.reg_in_sel select reg_in <=
         mem_out when REG_IN_SEL_MEM_OUT,

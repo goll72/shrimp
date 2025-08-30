@@ -31,7 +31,10 @@ architecture dataflow of control is
         s_jmp_push_pc_fetch_imm,
         s_jmp_push_pc_finish,
         s_ret,
+        s_reti_pop_flags,
+        s_reti_pop_pc,
         s_reti_pop_all,
+        s_reti_pop_all_inc_sp,
         s_int,
         s_ld,
         s_ld2,
@@ -86,6 +89,7 @@ architecture dataflow of control is
         ctrl.flags_in_c_sel <= FLAGS_IN_SEL_SELF;
         ctrl.flags_in_o_sel <= FLAGS_IN_SEL_SELF;
         ctrl.flags_in_ien_sel <= FLAGS_IN_SEL_SELF;
+        ctrl.flags_in_all_sel <= FLAGS_IN_ALL_SEL_REG1OUT;
         ctrl.flags_w_n <= '0';
         ctrl.flags_w_z <= '0';
         ctrl.flags_w_p <= '0';
@@ -113,6 +117,7 @@ architecture dataflow of control is
         ctrl.alu_en <= '0';
         ctrl.irc_soft_irq <= '0';
         ctrl.irc_soft_id_sel <= IRC_SOFT_ID_SEL_NOTHING;
+        ctrl.irc_claim <= '0';
     end procedure;
 
     procedure fetch_imm(signal ctrl : inout ctrl_t ; opcode : opcode_t) is
@@ -224,6 +229,21 @@ architecture dataflow of control is
         ctrl.alu_en <= '0';
     end procedure;
 
+    procedure inc_sp(signal ctrl : inout ctrl_t) is
+    begin
+        ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_REG_SP;
+        ctrl.reg_waddr_sel <= REG_WADDR_SEL_REG_SP;
+        ctrl.reg_in_sel <= REG_IN_SEL_ALU_OUT;
+        ctrl.reg_word <= '1';
+        ctrl.reg_w <= '1';
+        ctrl.alu_opname_sel <= ALU_OPNAME_SEL_ADD;
+        ctrl.alu_in1_sel <= ALU_IN1_SEL_REG1OUT;
+        ctrl.alu_in2_sel <= ALU_IN2_SEL_ONE;
+        ctrl.alu_sign <= '0';
+        ctrl.alu_word <= '1';
+        ctrl.alu_en <= '1';
+    end procedure;
+
     -- decrement stack pointer
     procedure dec_sp(signal ctrl : inout ctrl_t) is
     begin
@@ -298,8 +318,6 @@ begin
                         -- incremented immediately in the next state
                         counter <= 0;
                         dec_sp(ctrl);
-                        ctrl.flags_in_ien_sel <= FLAGS_IN_SEL_NEW_LO;
-                        ctrl.flags_w_ien <= '1';
                         next_state := s_irq;
                     else
                         -- IR <= [PC++]
@@ -388,33 +406,57 @@ begin
                 when s_ret =>
                     ctrl.pc_in_sel <= PC_IN_SEL_MEM_OUT;
                     ctrl.pc_w <= '1';
+                    -- reg1out is sp
                     ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
                     ctrl.mem_r <= '1';
                     ctrl.mem_w <= '0';
                     ctrl.mem_en <= '1';
-                    ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_REG_SP;
-                    ctrl.reg_waddr_sel <= REG_WADDR_SEL_REG_SP;
-                    ctrl.reg_in_sel <= REG_IN_SEL_ALU_OUT;
-                    ctrl.reg_word <= '1';
-                    ctrl.reg_w <= '1';
-                    ctrl.alu_opname_sel <= ALU_OPNAME_SEL_ADD;
-                    ctrl.alu_in1_sel <= ALU_IN1_SEL_REG1OUT;
-                    ctrl.alu_in2_sel <= ALU_IN2_SEL_ONE;
-                    ctrl.alu_sign <= '0';
-                    ctrl.alu_word <= '1';
-                    ctrl.alu_en <= '1';
+                    inc_sp(ctrl);
 
                     if reti = '1' then
-                        counter <= 14;
-                        next_state := s_reti_pop_all;
+                        -- pop flags, then PC, then r14 through r1
+                        next_state := s_reti_pop_flags;
                     else
                         next_state := s_fetch;
                     end if;
+                when s_reti_pop_flags =>
+                    inc_sp(ctrl);
+                    ctrl.flags_in_all_sel <= FLAGS_IN_ALL_SEL_MEM_OUT;
+                    ctrl.flags_w_all <= '1';
+                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
+                    ctrl.mem_r <= '1';
+                    ctrl.mem_en <= '1';
+                    next_state := s_reti_pop_pc;
+                when s_reti_pop_pc =>
+                    inc_sp(ctrl);
+                    ctrl.pc_in_sel <= PC_IN_SEL_MEM_OUT;
+                    ctrl.pc_w <= '1';
+                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
+                    ctrl.mem_r <= '1';
+                    ctrl.mem_en <= '1';
+
+                    -- counter is not decremented immediately
+                    counter <= 14;
+                    next_state := s_reti_pop_all;
                 when s_reti_pop_all =>
-                    -- if counter = 0 then break
-                    -- pop registers(counter) from sp
-                    -- increment sp
-                    -- decrement counter
+                    inc_sp(ctrl);
+                    ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;
+                    ctrl.mem_r <= '1';
+                    ctrl.mem_en <= '1';
+                    ctrl.reg_waddr_sel <= REG_WADDR_SEL_COUNTER;
+                    ctrl.reg_in_sel <= REG_IN_SEL_MEM_OUT;
+                    ctrl.reg_word <= '1';
+                    ctrl.reg_w <= '1';
+                    next_state := s_reti_pop_all_inc_sp;
+                when s_reti_pop_all_inc_sp =>
+                    inc_sp(ctrl);
+                    counter <= counter - 1;
+                    if counter = 1 then
+                        ctrl.irc_claim <= '1';
+                        next_state := s_fetch;
+                    else
+                        next_state := s_reti_pop_all;
+                    end if;
                 when s_int =>
                     ctrl.irc_soft_irq <= '1';
                     if imm = '1' then
@@ -465,7 +507,7 @@ begin
                 when s_stflg =>
                     ctrl.pc_w <= '0';
                     ctrl.ir_w <= '0';
-                    -- flags word input is always reg1out
+                    ctrl.flags_in_all_sel <= FLAGS_IN_ALL_SEL_REG1OUT;
                     ctrl.flags_w_all <= '1';
                     ctrl.mem_en <= '0';
                     ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_IR_REG1;
@@ -496,7 +538,9 @@ begin
                     ctrl.mem_en <= '1';
                     next_state := s_irq_push_flags;
                 when s_irq_push_flags =>
-                    -- no need to dec sp
+                    dec_sp(ctrl);
+                    ctrl.flags_in_ien_sel <= FLAGS_IN_SEL_NEW_LO;
+                    ctrl.flags_w_ien <= '1';
                     ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_REG_SP;
                     ctrl.reg_word <= '1';
                     ctrl.mem_addr_sel <= MEM_ADDR_SEL_REG1OUT;

@@ -74,6 +74,11 @@ package attrs is
         FLAGS_IN_SEL_NEW_LO
     );
 
+    type flags_in_all_sel_t is (
+        FLAGS_IN_ALL_SEL_MEM_OUT,
+        FLAGS_IN_ALL_SEL_REG1OUT
+    );
+
     type mem_addr_sel_t is (
         MEM_ADDR_SEL_PC,
         MEM_ADDR_SEL_REG1OUT,
@@ -106,7 +111,8 @@ package attrs is
     type reg_waddr_sel_t is (
         REG_WADDR_SEL_REG_IMM,
         REG_WADDR_SEL_IR_REG1,
-        REG_WADDR_SEL_REG_SP
+        REG_WADDR_SEL_REG_SP,
+        REG_WADDR_SEL_COUNTER
     );
 
     type reg_in_sel_t is (
@@ -156,6 +162,7 @@ package attrs is
         flags_w_o        : std_logic;
         flags_in_ien_sel : flags_in_sel_t;
         flags_w_ien      : std_logic;
+        flags_in_all_sel : flags_in_all_sel_t;
         flags_w_all      : std_logic;
 
         mem_addr_sel     : mem_addr_sel_t;
@@ -181,5 +188,6 @@ package attrs is
 
         irc_soft_irq     : std_logic;
         irc_soft_id_sel  : irc_soft_id_sel_t;
+        irc_claim        : std_logic;
     end record;
 end package;
