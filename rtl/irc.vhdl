@@ -23,9 +23,11 @@ architecture behavioral of irc is
 
     signal ready : std_logic;
 begin
+    -- only signal that should be gated on enable is irq
+    -- the other signals may be used in the interrupt control cycle
     asserted_irq <= latched_irq when en = '1' else '0';
-    asserted_hard <= latched_hard when en = '1' else '0';
-    asserted_id <= latched_id when en = '1' else (others => '0');
+    asserted_hard <= latched_hard;
+    asserted_id <= latched_id;
     -- IRC is ready to handle interrupts when nothing is latched
     ready <= not latched_irq;
 

@@ -46,7 +46,8 @@ architecture dataflow of control is
         s_bad
     );
 
-    alias opcode is memout(opcode_range);
+    alias decode_opcode is memout(opcode_range);
+    alias opcode is ir(opcode_range);
     alias imm is ir(IMM_BIT);
     alias wrd is ir(WRD_BIT);
     alias sgn is ir(SGN_BIT);
@@ -148,6 +149,11 @@ architecture dataflow of control is
         ctrl.mem_en <= '0';
         -- reg2addr will be selected before this procedure runs (same state)
         ctrl.reg_reg1addr_sel <= REG_REG1ADDR_SEL_IR_REG1;
+        if shifty(ir(opcode_range)) then
+            ctrl.reg_word <= '1';
+        else
+            ctrl.reg_word <= wrd;
+        end if;
         ctrl.reg_word <= wrd;
         ctrl.reg_waddr_sel <= REG_WADDR_SEL_IR_REG1;
         ctrl.reg_in_sel <= REG_IN_SEL_ALU_OUT;
@@ -158,7 +164,11 @@ architecture dataflow of control is
         ctrl.alu_in2_sel <= ALU_IN2_SEL_REG2OUT;
         ctrl.alu_sign <= sgn;
         ctrl.alu_rot <= rot;
-        ctrl.alu_word <= wrd;
+        if shifty(ir(opcode_range)) then
+            ctrl.alu_word <= '1';
+        else
+            ctrl.alu_word <= wrd;
+        end if;
         ctrl.alu_en <= '1';
         -- flags
         ctrl.flags_in_n_sel <= FLAGS_IN_SEL_NEW_ALU;
@@ -288,6 +298,8 @@ begin
                         -- incremented immediately in the next state
                         counter <= 0;
                         dec_sp(ctrl);
+                        ctrl.flags_in_ien_sel <= FLAGS_IN_SEL_NEW_LO;
+                        ctrl.flags_w_ien <= '1';
                         next_state := s_irq;
                     else
                         -- IR <= [PC++]
@@ -303,7 +315,7 @@ begin
                         next_state := s_decode;
                     end if;
                 when s_decode =>
-                    with opcode select next_state :=
+                    with decode_opcode select next_state :=
                         s_alu when OP_ADD,
                         s_alu when OP_SUB,
                         s_alu when OP_MUL,
@@ -504,7 +516,6 @@ begin
                     ctrl.mem_en <= '1';
                     ctrl.pc_in_sel <= PC_IN_SEL_MEM_OUT;
                     ctrl.pc_w <= '1';
-                    -- TODO disable interrupts
                     next_state := s_fetch;
                 when s_bad =>
                     -- uh oh...
