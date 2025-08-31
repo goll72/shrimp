@@ -345,6 +345,7 @@ begin
                         s_alu when OP_MUL,
                         s_alu when OP_DIV,
                         s_alu when OP_SHA,
+                        s_alu when OP_MOD,
                         s_alu when OP_AND,
                         s_alu when OP_OR,
                         s_alu when OP_XOR,
