@@ -9,6 +9,7 @@ package attrs is
     constant SHIFT_AMOUNT_BITS : natural := 4;
     constant IRQ_LINE_BITS : natural := 5;
     constant MSB : natural := 15;
+    constant N_PORTS : natural := 16; -- number of hardware ports
 
     -- bit offsets in the instruction register
     constant IMM_BIT : natural := 6;
@@ -56,6 +57,8 @@ package attrs is
     -- PC offsets for interrupts
     constant WORD_HARD_OFF : word_t := "0000000000010000";
     constant WORD_SOFT_OFF : word_t := "0000000000110000";
+    -- program words start at 0x50
+    constant MEM_PROG_START : word_t := "0000000001010000";
 
     -- control signals
     type pc_in_sel_t is (
@@ -63,7 +66,8 @@ package attrs is
         PC_IN_SEL_IR_REG2, -- interrupt vector from IR (+ 0xF)
         PC_IN_SEL_REG1OUT, -- register 1 output (+ 0xF)
         PC_IN_SEL_REG2OUT, -- register 2 output directly
-        PC_IN_SEL_MEM_OUT
+        PC_IN_SEL_MEM_OUT,
+        PC_IN_SEL_PROG_START
     );
 
     type flags_in_sel_t is (

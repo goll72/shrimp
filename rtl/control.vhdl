@@ -318,6 +318,8 @@ begin
             case next_state is
                 when s_reset =>
                     counter <= 0;
+                    ctrl.pc_in_sel <= PC_IN_SEL_PROG_START;
+                    ctrl.pc_w <= '1';
                     next_state := s_fetch;
                 when s_fetch =>
                     if irq = '1' then

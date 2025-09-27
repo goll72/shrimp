@@ -10,8 +10,8 @@ entity cpu is
     port (
         clk, rst : in std_logic;
         irq : in std_logic;
-        d_in : in word_t;
-        d_out : out word_t
+        porta : out word_t;
+        portb : in word_t
     );
 end entity;
 
@@ -54,7 +54,7 @@ begin
 
     PC_reg : entity work.reg port map (
         clk => clk,
-        rst => rst,
+        rst => '0',
         w_en => ctrl.pc_w,
         q => pc,
         d => pc_in
@@ -73,14 +73,16 @@ begin
         q => flags
     );
 
-    RAM : entity work.memory port map (
-        clk => not clk, -- trigger on falling edge instead
+    mem_controller : entity work.memioc port map (
+        clk => clk,
         en => ctrl.mem_en,
         r => ctrl.mem_r,
         w => ctrl.mem_w,
         addr => mem_addr,
         d_in => mem_in,
-        d_out => mem_out
+        d_out => mem_out,
+        porta => porta,
+        portb => portb
     );
 
     GPRs : entity work.reg_file port map (
@@ -193,7 +195,8 @@ begin
         ir_ivec when PC_IN_SEL_IR_REG2,
         reg1_ivec when PC_IN_SEL_REG1OUT,
         reg2out when PC_IN_SEL_REG2OUT,
-        mem_out when PC_IN_SEL_MEM_OUT;
+        mem_out when PC_IN_SEL_MEM_OUT,
+        MEM_PROG_START when PC_IN_SEL_PROG_START;
 
     with ctrl.flags_in_all_sel select flag_d <=
         mem_out when FLAGS_IN_ALL_SEL_MEM_OUT,

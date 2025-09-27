@@ -13,6 +13,7 @@ SRC = rtl/attrs.vhdl              \
       rtl/irc.vhdl                \
       rtl/control.vhdl            \
       rtl/memory.vhdl             \
+      rtl/memioc.vhdl             \
       rtl/cpu.vhdl
 
 WORK ?= work
