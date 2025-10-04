@@ -21,7 +21,7 @@ begin
 
     csm : for i in d_in1'range generate
         result(i) <= d_in1(i) xor d_in2(i) xor borrows(i);
-        borrows(i + 1) <= borrows(i) and ((not d_in1(i)) or d_in2(i)) or ((not d_in1(i)) and d_in2(i));
+        borrows(i + 1) <= (borrows(i) and ((not d_in1(i)) or d_in2(i))) or ((not d_in1(i)) and d_in2(i));
     end generate;
 
     b_out <= borrows(borrows'high);

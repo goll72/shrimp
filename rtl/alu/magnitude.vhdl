@@ -41,6 +41,8 @@ begin
 
             if d_in1(msb) = '1' then
                 d_out <= in_neg;
+            else
+                d_out <= d_in1;
             end if;
         else
             signb <= '0';

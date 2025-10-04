@@ -24,15 +24,17 @@ architecture behavioral of memioc is
     signal ports : port_array_t;
 
     signal mem_en : std_logic;
+    signal mem_out : word_t;
+    signal port_out : word_t;
 begin
     RAM : entity work.memory port map (
-        clk => not clk, -- trigger on falling edge instead
+        clk => clk, -- triggered on falling edge
         en => mem_en,
         r => r,
         w => w,
         addr => addr,
         d_in => d_in,
-        d_out => d_out
+        d_out => mem_out
     );
 
     process (all) is
@@ -40,6 +42,7 @@ begin
     begin
         addr_idx := to_integer(unsigned(addr));
         mem_en <= '0' when addr_idx < N_PORTS else en;
+        d_out <= port_out when mem_en = '0' else mem_out;
     end process;
 
     process (clk) is
@@ -54,20 +57,20 @@ begin
             if en = '1' then
                 if addr_idx = 1 and w = '1' then
                     -- idk what it means to write to an input
-                    d_out <= (others => 'Z');
+                    port_out <= mem_out;
                 elsif addr_idx < N_PORTS then
                     if r = '1' then
-                        d_out <= ports(addr_idx);
+                        port_out <= ports(addr_idx);
                     elsif w = '1' then
                         ports(addr_idx) <= d_in;
-                        d_out <= (others => 'Z');
+                        port_out <= mem_out;
                     end if;
                 else
-                    d_out <= (others => 'Z');
+                    port_out <= mem_out;
                     -- here, memory is enabled directly
                 end if;
             else
-                d_out <= (others => 'Z');
+                port_out <= mem_out;
             end if;
         end if;
     end process;

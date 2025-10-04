@@ -89,7 +89,7 @@ begin
         clk => clk,
         rst => rst,
         w_en => ctrl.reg_w,
-        w_word => ctrl.alu_word,
+        w_word => ctrl.reg_word,
         w_addr => reg_waddr,
         w_data => reg_in,
         reg1_addr => reg1addr,
